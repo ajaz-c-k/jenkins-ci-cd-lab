@@ -3,6 +3,9 @@ pipeline {
     tools {
         nodejs 'node18'
     }
+    environment {
+        DEPLOY_DIR = '/tmp/ci-cd-lab'
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -11,6 +14,7 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
+                sh 'npm install'
                 sh 'npm ci'
             }
         }
@@ -24,13 +28,27 @@ pipeline {
                 sh 'npm run build'
             }
         }
+        stage('Deploy') {
+            when {
+                expression { env.GIT_BRANCH == 'origin/main' }
+            }
+            steps {
+                sh '''
+                echo "Deploying..."
+                mkdir -p $DEPLOY_DIR
+                rm -rf $DEPLOY_DIR/*
+                cp -r dist/* $DEPLOY_DIR/
+                '''
+            }
+        }
     }
     post {
         success {
-            echo 'CI pipeline passed'
+            echo 'Pipeline succeeded'
         }
         failure {
-            echo 'CI pipeline failed'
+            echo 'Pipeline failed'
         }
     }
 }
+
